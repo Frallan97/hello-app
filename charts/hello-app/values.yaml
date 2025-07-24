@@ -10,7 +10,6 @@ service:
 ingress:
   enabled: true
   # Namespace where wildcard secret currently lives:
-  tlsSecretNamespace: test-tls
   # TLS settings
   tls:
     - hosts:
