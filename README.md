@@ -4,9 +4,10 @@ This repository provides a minimal, production-ready Helm chart and CI pipeline 
 
 ## Features
 - Minimal Helm chart for a containerized app
-- Automated Ingress creation with TLS (wildcard secret copying)
+- Automated Ingress creation with TLS (manual wildcard secret copy)
 - GitHub Actions workflow for building and pushing Docker images to GHCR
 - Ready-to-use Dockerfile (http-echo example)
+- **Argo CD** used for deployment and GitOps
 
 ---
 
@@ -41,10 +42,27 @@ This repository provides a minimal, production-ready Helm chart and CI pipeline 
 
 7. **Build & Deploy:**
    - On push to `main`, the GitHub Actions workflow will build and push your Docker image to GHCR.
-   - Install the Helm chart to your cluster:
+   - **Deployment is managed by Argo CD.**
+   - Install the Helm chart to your cluster (if not using Argo CD directly):
      ```sh
      helm install <release-name> charts/<your-app-name> --namespace <namespace> --create-namespace
      ```
+
+---
+
+## Manual TLS Secret Copy (Required for Ingress TLS)
+This chart does **not** automate copying the wildcard TLS secret. You must manually copy the TLS secret into each app's namespace before deploying with Argo CD or Helm.
+
+**Command:**
+```sh
+kubectl get secret web-wildcard-tls -n test-tls -o yaml \
+  | sed 's/namespace: test-tls/namespace: <your-app-namespace>/' \
+  | kubectl apply -f -
+```
+Replace `<your-app-namespace>` with your app's namespace (e.g. `hello-app`).
+
+- The Ingress template expects the secret to be named `web-wildcard-tls` in the app's namespace.
+- If the secret is missing, Ingress TLS will not work.
 
 ---
 
@@ -52,7 +70,7 @@ This repository provides a minimal, production-ready Helm chart and CI pipeline 
 - **App name:** everywhere you see `hello-app`
 - **Docker image:** repository, tag, and Dockerfile contents
 - **Ingress host/domain:** in `values.yaml`
-- **TLS secret/namespace:** in `values.yaml`
+- **TLS secret/namespace:** in `values.yaml` (for documentation, but secret copy is manual)
 - **Chart metadata:** in `Chart.yaml`
 
 ---
@@ -68,7 +86,8 @@ Suppose you want to create `my-cool-app`:
    - `ingress.tls[0].secretName: <your-tls-secret>`
    - `ingress.tlsSecretNamespace: <your-tls-namespace>`
 4. Update `Chart.yaml` and `.github/workflows/ci.yaml` as needed.
-5. Push and deploy!
+5. **Manually copy the wildcard TLS secret** to the new namespace (see above).
+6. Push and deploy! Argo CD will pick up the changes and deploy your app.
 
 ---
 
