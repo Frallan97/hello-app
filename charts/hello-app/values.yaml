@@ -6,3 +6,21 @@ image:
 
 service:
   port: 80
+
+ingress:
+  enabled: true
+  # Namespace where wildcard secret currently lives:
+  tlsSecretNamespace: test-tls
+  # TLS settings
+  tls:
+    - hosts:
+        - hello-app.web.franssjostrom.com
+      secretName: web-wildcard-tls
+  # Rules
+  hosts:
+    - host: hello-app.web.franssjostrom.com
+      paths:
+        - path: /
+          pathType: Prefix
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
